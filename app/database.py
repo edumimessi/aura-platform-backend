@@ -11,6 +11,10 @@ em toda a aplicação. Isso é importante para:
 import os
 from supabase import create_client, Client
 from functools import lru_cache
+from dotenv import load_dotenv
+
+# Garante que .env seja carregado antes de qualquer os.getenv()
+load_dotenv()
 
 @lru_cache(maxsize=1)
 def get_supabase_client() -> Client:

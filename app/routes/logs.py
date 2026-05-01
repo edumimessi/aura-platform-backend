@@ -15,7 +15,7 @@ from app.models import (
 )
 from app.auth import verify_supabase_token, get_user_id
 from app.database import supabase
-from datetime import date
+from datetime import date, datetime, timedelta
 import uuid
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
@@ -119,11 +119,14 @@ async def get_mood_records(
         raise HTTPException(status_code=403, detail="Acesso negado")
     
     # Query com filtro de data
+    # CORRIGIDO: Supabase PostgREST não aceita SQL interval em .gte().
+    # Calculamos a data de corte em Python e passamos como string ISO.
+    cutoff_date = (datetime.utcnow() - timedelta(days=days)).date().isoformat()
     try:
         response = supabase.table('mood_records').select('*').eq(
             'patient_id', patient_id
         ).gte(
-            'record_date', f"now() - interval '{days} days'"
+            'record_date', cutoff_date
         ).order('record_date', desc=True).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar registros: {str(e)}")
@@ -170,12 +173,15 @@ async def create_crisis_record(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao salvar crise: {str(e)}")
     
-    # Gerar alerta CRÍTICO
+    # Gerar alerta no backend como fallback de segurança.
+    # O trigger 02_triggers.sql já cria o alerta automaticamente no banco,
+    # mas mantemos aqui como redundância — dado clínico crítico não pode
+    # depender de um único ponto de falha.
     severity = 'critical' if record.has_suicidal_ideation else 'high'
     alert_data = {
         'id': str(uuid.uuid4()),
         'patient_id': patient_id,
-        'source_type': 'crisis_record',
+        'source_type': 'suicidal_ideation' if record.has_suicidal_ideation else 'crisis_record',
         'source_record_id': crisis_id,
         'severity': severity,
         'status': 'open'
