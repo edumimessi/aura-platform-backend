@@ -1,28 +1,23 @@
 """
-auth.py — Autenticação com Supabase JWT
+auth.py - Autenticação com Supabase JWT.
 
-IMPORTANTE: Este arquivo NÃO gera tokens. Apenas valida tokens
-emitidos pelo Supabase Auth.
-
-Fluxo:
-1. Flutter faz login via Supabase Auth.
-2. Supabase retorna JWT (gerado por eles).
-3. Flutter envia esse JWT no header Authorization.
-4. FastAPI valida o JWT usando a chave secreta do Supabase.
-5. Se válido, extrai user_id e processa a requisição.
+Este arquivo não gera tokens. Ele apenas valida tokens emitidos
+pelo Supabase Auth e expõe dependências FastAPI para extrair o usuário.
 """
 
 import os
+from typing import Optional
+
 from dotenv import load_dotenv
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
-# Carrega o .env ANTES de qualquer os.getenv()
-# Sem isso, as variáveis de ambiente não estão disponíveis ainda.
+# Carrega o .env antes de qualquer os.getenv().
 load_dotenv()
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 
@@ -34,31 +29,50 @@ if not SUPABASE_JWT_SECRET:
     )
 
 
-async def verify_supabase_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> dict:
-    """
-    Valida o JWT emitido pelo Supabase Auth.
-
-    Retorna o payload completo (contém user_id, role, etc).
-
-    NÃO cria tokens — apenas verifica os que chegam.
-    """
-    token = credentials.credentials
+def _decode_supabase_token(token: str) -> dict:
+    """Decodifica o JWT do Supabase sem expor detalhes internos em erro."""
     try:
         payload = jwt.decode(
             token,
             SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
-            # Supabase emite tokens com audience "authenticated"
-            options={"verify_aud": False}
+            # Supabase emite tokens com audience "authenticated".
+            options={"verify_aud": False},
         )
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Token sem user_id")
-        return payload  # retorna payload completo
-    except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    if not payload.get("sub"):
+        raise HTTPException(status_code=401, detail="Token sem user_id")
+
+    return payload
+
+
+async def verify_supabase_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> dict:
+    """
+    Valida o JWT emitido pelo Supabase Auth.
+
+    Retorna o payload completo, incluindo o campo sub usado como user_id.
+    """
+    return _decode_supabase_token(credentials.credentials)
+
+
+async def get_optional_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+) -> Optional[str]:
+    """
+    Extrai o user_id quando Authorization: Bearer <token> estiver presente.
+
+    Usado em fluxos de transição MVP/dev: se não houver token, retorna None.
+    Se houver token inválido, bloqueia a requisição com erro genérico.
+    """
+    if credentials is None:
+        return None
+
+    payload = _decode_supabase_token(credentials.credentials)
+    return payload["sub"]
 
 
 def get_user_id(payload: dict = Depends(verify_supabase_token)) -> str:

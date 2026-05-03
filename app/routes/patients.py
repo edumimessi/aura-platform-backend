@@ -2,8 +2,9 @@
 routes/patients.py - Endpoints para o fluxo inicial de pacientes.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth import get_optional_user_id
 from app.database import supabase
 from app.models import PatientCreate, PatientResponse
 
@@ -16,7 +17,10 @@ PATIENT_COLUMNS = (
 
 
 @router.post("", response_model=PatientResponse, status_code=201)
-async def create_patient(patient: PatientCreate):
+async def create_patient(
+    patient: PatientCreate,
+    authenticated_user_id: str | None = Depends(get_optional_user_id),
+):
     """
     Cria um paciente.
 
@@ -25,6 +29,14 @@ async def create_patient(patient: PatientCreate):
     Em produção, doctor_id deve vir do JWT do médico autenticado.
     """
     patient_data = patient.model_dump(exclude_none=True, mode="json")
+
+    if authenticated_user_id:
+        patient_data["doctor_id"] = authenticated_user_id
+    elif "doctor_id" not in patient_data:
+        raise HTTPException(
+            status_code=401,
+            detail="Autenticação obrigatória ou doctor_id temporário para dev.",
+        )
 
     try:
         response = (

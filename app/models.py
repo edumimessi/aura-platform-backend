@@ -21,7 +21,7 @@ class PatientCreate(BaseModel):
     # Temporário para MVP/dev:
     # em produção, doctor_id deve vir do JWT do médico autenticado,
     # nunca do corpo da requisição.
-    doctor_id: UUID
+    doctor_id: Optional[UUID] = None
     auth_user_id: Optional[UUID] = None
     birth_date: Optional[date] = None
     gender: Optional[
