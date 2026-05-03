@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import logs
 from app.config import DEBUG, APP_NAME, APP_VERSION
+from app.database import supabase
 
 app = FastAPI(
     title=APP_NAME,
@@ -29,7 +30,20 @@ app.include_router(logs.router)
 @app.get("/health")
 async def health_check():
     """Endpoint de health check."""
-    return {"status": "ok", "version": APP_VERSION}
+    return {"status": "ok"}
+
+@app.get("/db-check")
+async def db_check():
+    """Verifica se o backend consegue consultar o Supabase."""
+    try:
+        supabase.table("patients").select("id").limit(1).execute()
+        return {"status": "ok", "database": "connected"}
+    except Exception:
+        return {
+            "status": "error",
+            "database": "unavailable",
+            "detail": "Supabase query failed",
+        }
 
 @app.get("/")
 async def root():
