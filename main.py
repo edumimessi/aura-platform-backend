@@ -4,7 +4,7 @@ main.py — Aplicação FastAPI principal para AURA
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import logs
+from app.routes import logs, patients
 from app.config import DEBUG, APP_NAME, APP_VERSION
 from app.database import supabase
 
@@ -26,6 +26,7 @@ app.add_middleware(
 
 # Registrar rotas
 app.include_router(logs.router)
+app.include_router(patients.router)
 
 @app.get("/health")
 async def health_check():
