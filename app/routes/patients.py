@@ -4,7 +4,7 @@ routes/patients.py - Endpoints para o fluxo inicial de pacientes.
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.auth import get_optional_user_id
+from app.auth import get_optional_user_id, get_user_id
 from app.database import supabase
 from app.models import PatientCreate, PatientResponse
 
@@ -61,13 +61,22 @@ async def create_patient(
 
 
 @router.get("", response_model=list[PatientResponse])
-async def list_patients():
-    """Lista pacientes ativos."""
+async def list_patients(
+    doctor_id: str = Depends(get_user_id),
+):
+    """
+    Lista pacientes ativos do médico autenticado.
+
+    LGPD: filtra obrigatoriamente por doctor_id extraído do JWT.
+    O médico só vê seus próprios pacientes — nunca os de outro médico.
+    A SERVICE_KEY bypassa RLS, então o filtro deve ser feito aqui no código.
+    """
     try:
         response = (
             supabase.table("patients")
             .select(PATIENT_COLUMNS)
             .eq("is_active", True)
+            .eq("doctor_id", doctor_id)
             .order("created_at", desc=True)
             .execute()
         )

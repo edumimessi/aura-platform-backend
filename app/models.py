@@ -76,7 +76,9 @@ class MoodRecordResponse(BaseModel):
 class MedicationRecordCreate(BaseModel):
     """Modelo para criar um registro de medicação."""
     medication_id: str
-    status: Literal['taken', 'missed', 'delayed', 'skipped_intentional', 'pending']
+    # Valores devem corresponder ao CHECK constraint do banco:
+    # taken | missed | delayed | skipped | pending
+    status: Literal['taken', 'missed', 'delayed', 'skipped', 'pending']
     skip_reason: Optional[str] = None
     taken_at: Optional[datetime] = None
 
