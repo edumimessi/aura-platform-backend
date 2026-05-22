@@ -4,7 +4,7 @@ API de acompanhamento psiquiatrico ambulatorial para o projeto AURA.
 
 ## Status atual
 
-Este backend esta em fase de MVP tecnico. Ja possui autenticacao por JWT do Supabase, rotas de registros clinicos, consentimento LGPD, modulos de acompanhamento e dashboard medico inicial. Ainda nao deve ser considerado pronto para producao sem testes automatizados, revisao de RLS/politicas de banco e validacao de seguranca ponta a ponta.
+Este backend esta em fase de MVP tecnico. Ja possui autenticacao por JWT do Supabase, rotas de registros clinicos, consentimento LGPD, modulos de acompanhamento, registro de dispositivos e dashboard medico inicial. Ainda nao deve ser considerado pronto para producao sem testes automatizados, revisao de RLS/politicas de banco e validacao de seguranca ponta a ponta.
 
 ## Estrutura
 
@@ -18,6 +18,7 @@ aura-platform-backend/
 │   ├── routes/
 │   │   ├── consent.py
 │   │   ├── dashboard.py
+│   │   ├── devices.py
 │   │   ├── logs.py
 │   │   ├── modules.py
 │   │   └── patients.py
@@ -79,6 +80,7 @@ Nunca exponha `SUPABASE_SERVICE_KEY` no frontend.
 - `POST /api/consent`
 - `GET /api/consent/status`
 - `POST /api/consent/revoke`
+- `POST /api/devices/register`
 
 ## Banco de dados
 
@@ -95,7 +97,7 @@ O backend foi ajustado para usar os nomes de coluna do schema atual, como `score
 - Criar testes de permissao medico/paciente.
 - Criar testes de contrato para cada endpoint.
 - Implementar endpoint real de prescricoes/medicamentos.
-- Implementar registro de dispositivos ou remover chamada do frontend ate a fase de push.
+- Integrar envio real de notificacoes push via Firebase Admin.
 - Adicionar CI para lint e testes.
 
 ## Licenca
