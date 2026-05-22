@@ -1,7 +1,7 @@
 """
-models.py — Validação de dados com Pydantic v2
+models.py - Validacao de dados com Pydantic v2
 
-Usa Literal em vez de regex para enums — mais legível e seguro.
+Mantem os contratos da API alinhados ao schema SQL do Supabase.
 """
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,9 +18,9 @@ class PatientCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # Temporário para MVP/dev:
-    # em produção, doctor_id deve vir do JWT do médico autenticado,
-    # nunca do corpo da requisição.
+    # Temporario para MVP/dev:
+    # em producao, doctor_id deve vir do JWT do medico autenticado,
+    # nunca do corpo da requisicao.
     doctor_id: Optional[UUID] = None
     auth_user_id: Optional[UUID] = None
     birth_date: Optional[date] = None
@@ -74,23 +74,33 @@ class MoodRecordResponse(BaseModel):
 # MEDICATION RECORDS
 # ============================================================
 class MedicationRecordCreate(BaseModel):
-    """Modelo para criar um registro de medicação."""
+    """Modelo para criar um registro de medicacao."""
     medication_id: str
-    # Valores devem corresponder ao CHECK constraint do banco:
-    # taken | missed | delayed | skipped | pending
-    status: Literal['taken', 'missed', 'delayed', 'skipped', 'pending']
-    skip_reason: Optional[str] = None
+    scheduled_at: datetime
+    status: Literal[
+        'taken',
+        'missed',
+        'delayed',
+        'skipped_intentional',
+        'pending',
+    ] = 'pending'
+    skip_reason: Optional[
+        Literal['forgot', 'side_effects', 'felt_well', 'no_medication', 'other']
+    ] = None
     taken_at: Optional[datetime] = None
+    notes: Optional[str] = None
 
 
 class MedicationRecordResponse(BaseModel):
-    """Modelo de resposta para registro de medicação."""
+    """Modelo de resposta para registro de medicacao."""
     id: str
     patient_id: str
     medication_id: str
+    scheduled_at: datetime
     status: str
     taken_at: Optional[datetime]
     skip_reason: Optional[str]
+    notes: Optional[str]
     created_at: datetime
 
     class Config:
@@ -183,7 +193,7 @@ class SleepRecordResponse(BaseModel):
 # EXERCISE RECORDS
 # ============================================================
 class ExerciseRecordCreate(BaseModel):
-    """Modelo para criar um registro de exercício."""
+    """Modelo para criar um registro de exercicio."""
     record_date: date = Field(default_factory=date.today)
     exercise_type: Optional[str] = None
     duration_minutes: Optional[int] = None
@@ -192,7 +202,7 @@ class ExerciseRecordCreate(BaseModel):
     notes: Optional[str] = None
 
 class ExerciseRecordResponse(BaseModel):
-    """Modelo de resposta para registro de exercício."""
+    """Modelo de resposta para registro de exercicio."""
     id: str
     patient_id: str
     record_date: date
@@ -210,7 +220,7 @@ class ExerciseRecordResponse(BaseModel):
 # MEDITATION RECORDS
 # ============================================================
 class MeditationRecordCreate(BaseModel):
-    """Modelo para criar um registro de meditação."""
+    """Modelo para criar um registro de meditacao."""
     record_date: date = Field(default_factory=date.today)
     duration_minutes: int
     technique: Optional[str] = None
@@ -218,7 +228,7 @@ class MeditationRecordCreate(BaseModel):
     notes: Optional[str] = None
 
 class MeditationRecordResponse(BaseModel):
-    """Modelo de resposta para registro de meditação."""
+    """Modelo de resposta para registro de meditacao."""
     id: str
     patient_id: str
     record_date: date
@@ -264,7 +274,7 @@ class DietRecordResponse(BaseModel):
 # CUSTOM SYMPTOMS
 # ============================================================
 class SymptomRecordCreate(BaseModel):
-    """Modelo para criar um registro de sintoma customizável."""
+    """Modelo para criar um registro de sintoma customizavel."""
     symptom_id: str
     record_date: date = Field(default_factory=date.today)
     numeric_value: Optional[float] = None
@@ -273,7 +283,7 @@ class SymptomRecordCreate(BaseModel):
     notes: Optional[str] = None
 
 class SymptomRecordResponse(BaseModel):
-    """Modelo de resposta para registro de sintoma customizável."""
+    """Modelo de resposta para registro de sintoma customizavel."""
     id: str
     patient_id: str
     symptom_id: str
