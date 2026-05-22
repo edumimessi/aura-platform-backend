@@ -1,120 +1,103 @@
-# AURA Platform — Backend (FastAPI)
+# AURA Platform - Backend (FastAPI)
 
-API de acompanhamento psiquiátrico ambulatorial.
+API de acompanhamento psiquiatrico ambulatorial para o projeto AURA.
 
-## Estrutura do Projeto
+## Status atual
 
-```
+Este backend esta em fase de MVP tecnico. Ja possui autenticacao por JWT do Supabase, rotas de registros clinicos, consentimento LGPD, modulos de acompanhamento e dashboard medico inicial. Ainda nao deve ser considerado pronto para producao sem testes automatizados, revisao de RLS/politicas de banco e validacao de seguranca ponta a ponta.
+
+## Estrutura
+
+```text
 aura-platform-backend/
 ├── app/
-│   ├── __init__.py
-│   ├── config.py              # Configuração centralizada
-│   ├── database.py            # Conexão com Supabase
-│   ├── auth.py                # Validação de JWT
-│   ├── models.py              # Pydantic models
+│   ├── auth.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
 │   ├── routes/
-│   │   ├── __init__.py
-│   │   └── logs.py            # Endpoints de registros diários
+│   │   ├── consent.py
+│   │   ├── dashboard.py
+│   │   ├── logs.py
+│   │   ├── modules.py
+│   │   └── patients.py
 │   └── services/
-│       ├── __init__.py
-│       └── alert_service.py   # Lógica de alertas
-├── main.py                    # Aplicação FastAPI
-├── requirements.txt           # Dependências Python
-├── .env.example              # Exemplo de variáveis de ambiente
-├── .gitignore
-└── README.md
+│       └── alert_service.py
+├── supabase/
+│   ├── 01_schema.sql
+│   └── 02_triggers.sql
+├── main.py
+├── requirements.txt
+└── .env.example
 ```
 
-## Instalação
-
-### 1. Clonar o repositório
+## Instalar e executar
 
 ```bash
 git clone https://github.com/edumimessi/aura-platform-backend.git
 cd aura-platform-backend
-```
-
-### 2. Criar ambiente virtual
-
-```bash
 python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate  # Windows
-```
-
-### 3. Instalar dependências
-
-```bash
+# Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 4. Configurar variáveis de ambiente
-
-```bash
 cp .env.example .env
-```
-
-Edite `.env` e preencha com suas credenciais:
-- `SUPABASE_URL`: URL do seu projeto Supabase
-- `SUPABASE_SERVICE_KEY`: Chave de serviço do Supabase
-- `SUPABASE_JWT_SECRET`: JWT Secret do Supabase
-
-### 5. Executar a aplicação
-
-```bash
 python main.py
 ```
 
-A API estará disponível em: http://localhost:8000
+A API fica em `http://localhost:8000` e a documentacao Swagger em `http://localhost:8000/docs`.
 
-Documentação interativa (Swagger): http://localhost:8000/docs
+## Variaveis obrigatorias
 
-## Endpoints
-
-### Registros de Humor
-
-- `POST /api/logs/mood` — Criar registro de humor
-- `GET /api/logs/mood/{patient_id}` — Listar registros de humor
-
-### Registros de Crise
-
-- `POST /api/logs/crisis` — Criar registro de crise
-
-## Autenticação
-
-Todos os endpoints requerem um token JWT válido do Supabase no header:
-
-```bash
-Authorization: Bearer <supabase_jwt_token>
+```env
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_KEY=...
+SUPABASE_JWT_SECRET=...
+DEBUG=True
 ```
 
-## Segurança
+Nunca exponha `SUPABASE_SERVICE_KEY` no frontend.
 
-- ✅ Validação de tokens JWT do Supabase
-- ✅ Verificação de permissões (médico ou paciente)
-- ✅ Validação de dados com Pydantic
-- ✅ CORS configurado
-- ✅ Variáveis de ambiente protegidas
+## Endpoints principais
 
-## Próximos Passos
+- `GET /health`
+- `GET /db-check`
+- `POST /patients`
+- `GET /patients`
+- `POST /api/logs/mood`
+- `GET /api/logs/mood/{patient_id}`
+- `POST /api/logs/crisis`
+- `POST /api/modules/sleep`
+- `POST /api/modules/exercise`
+- `POST /api/modules/meditation`
+- `POST /api/modules/diet`
+- `POST /api/modules/symptoms`
+- `POST /api/modules/medications`
+- `GET /api/dashboard/patients`
+- `GET /api/dashboard/patients/{patient_id}/summary`
+- `GET /api/dashboard/alerts`
+- `PUT /api/dashboard/alerts/{alert_id}/resolve`
+- `POST /api/consent`
+- `GET /api/consent/status`
+- `POST /api/consent/revoke`
 
-- [ ] Implementar endpoints de medicações
-- [ ] Implementar endpoints de sono
-- [ ] Implementar endpoints de exercícios
-- [ ] Implementar endpoints de meditação
-- [ ] Implementar endpoints de dieta
-- [ ] Implementar sistema de alertas completo
-- [ ] Implementar dashboard do médico
-- [ ] Adicionar testes unitários
+## Banco de dados
 
-## Contribuindo
+Execute os arquivos em `supabase/` nesta ordem:
 
-1. Crie uma branch para sua feature: `git checkout -b feature/minha-feature`
-2. Commit suas mudanças: `git commit -am 'Adiciona minha feature'`
-3. Push para a branch: `git push origin feature/minha-feature`
-4. Abra um Pull Request
+1. `01_schema.sql`
+2. `02_triggers.sql`
 
-## Licença
+O backend foi ajustado para usar os nomes de coluna do schema atual, como `score`, `duration_minutes`, `source_type` e `is_enabled`.
+
+## Proximos passos tecnicos
+
+- Adicionar politicas RLS versionadas em SQL.
+- Criar testes de permissao medico/paciente.
+- Criar testes de contrato para cada endpoint.
+- Implementar endpoint real de prescricoes/medicamentos.
+- Implementar registro de dispositivos ou remover chamada do frontend ate a fase de push.
+- Adicionar CI para lint e testes.
+
+## Licenca
 
 MIT
